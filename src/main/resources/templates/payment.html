@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="NammaStocks - Complete your payment" />
+    <title>NammaStocks - Payment</title>
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary-color: #2e7d32;
+        --primary-dark: #005005;
+        --secondary-color: #1565c0;
+        --accent-color: #f57c00;
+        --danger-color: #c62828;
+        --success-color: #2e7d32;
+        --gray-100: #f8f9fa;
+        --gray-300: #dee2e6;
+        --gray-600: #6c757d;
+        --gray-700: #495057;
+        --gray-800: #343a40;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 50px 0;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .navbar {
+        background-color: white;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        padding: 15px 0;
+      }
+
+      .navbar-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: 700;
+        color: #212121;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+      }
+
+      .logo i {
+        color: var(--primary-color);
+        margin-right: 10px;
+        font-size: 28px;
+      }
+
+      .logo span {
+        color: var(--accent-color);
+      }
+
+      .main-content {
+        background-color: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: var(--shadow);
+        max-width: 500px;
+        width: 100%;
+        margin: 40px auto;
+        text-align: center;
+      }
+
+      .page-title {
+        font-size: 28px;
+        margin-bottom: 20px;
+        color: var(--secondary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .page-title i {
+        color: var(--accent-color);
+      }
+
+      .payment-info {
+        background-color: var(--gray-100);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+      }
+
+      .amount-display {
+        font-size: 48px;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin: 15px 0;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 16px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+        color: white;
+      }
+
+      .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
+
+      .btn-secondary {
+        background-color: var(--secondary-color);
+        color: white;
+        margin-top: 15px;
+      }
+
+      .btn-secondary:hover {
+        background-color: #003c8f;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
+
+      footer {
+        background-color: var(--gray-800);
+        color: var(--gray-300);
+        padding: 20px 0;
+        text-align: center;
+        margin-top: 40px;
+      }
+
+      @media (max-width: 576px) {
+        .amount-display {
+          font-size: 36px;
+        }
+        .page-title {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar" id="navbar">
+      <div class="container navbar-container">
+        <a href="/" class="logo">
+          <i class="fas fa-chart-line"></i>
+          Namma<span>Stocks</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="main-content">
+        <h2 class="page-title">
+          <i class="fas fa-credit-card"></i> Complete Payment
+        </h2>
+
+        <div class="payment-info">
+          <p style="color: #666; margin-bottom: 10px;">Amount to Pay:</p>
+          <div class="amount-display">
+            <i class="fas fa-rupee-sign"></i> <span th:text="${amount}">0</span>
+          </div>
+        </div>
+
+        <form action="/payment-success" method="post">
+          <input type="hidden" name="amount" th:value="${amount}">
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check-circle"></i> Confirm Payment
+          </button>
+        </form>
+
+        <a href="/recharge-wallet" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>&copy; 2025 NammaStocks. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Navbar scroll effect
+      const navbar = document.getElementById('navbar');
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+      });
+    </script>
+  </body>
+</html>
