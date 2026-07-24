@@ -1,10 +1,10 @@
 pipeline {
     agent any
     
-    tools {
-        maven 'Maven-3.8'
-        jdk 'JDK-11'
-    }
+   tools {
+    maven 'maven'     // Changed to match Jenkins configuration
+    // jdk 'JDK-11'   // Temporarily comment out or remove
+}
     
     environment {
         DOCKER_REGISTRY = 'vasupa32'
