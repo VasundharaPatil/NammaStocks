@@ -3,14 +3,14 @@
         label 'worker'
     }
     
-   environment {
-    KUBECONFIG = '/home/ubuntu/.kube/config'
-    NAMESPACE = 'production'
-    DOCKER_REGISTRY = 'vasupa32'  // ← Changed to your username
-    IMAGE_NAME = 'nammastocks'
-    WORKER_IP = '172.31.39.240'
-    REPO_URL = 'https://github.com/VasundharaPatil/NammaStocks.git'
-}
+    environment {
+        KUBECONFIG = '/home/ubuntu/.kube/config'
+        NAMESPACE = 'production'
+        DOCKER_REGISTRY = 'vasupa32'
+        IMAGE_NAME = 'nammastocks'
+        WORKER_IP = '172.31.39.240'
+        REPO_URL = 'https://github.com/VasundharaPatil/NammaStocks.git'
+    }
     
     parameters {
         string(name: 'BUILD_NUMBER', defaultValue: 'latest', description: 'Build number to deploy')
@@ -21,7 +21,7 @@
             steps {
                 git branch: 'main', url: env.REPO_URL
                 script {
-                    currentBuild.displayName = "NammaStocks Deploy Build #"
+                    currentBuild.displayName = "NammaStocks Deploy Build #${params.BUILD_NUMBER}"
                 }
             }
         }
@@ -29,10 +29,10 @@
         stage('Deploy Secrets and Database') {
             steps {
                 sh """
-                    kubectl create namespace  --dry-run=client -o yaml | kubectl apply -f -
+                    kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                     kubectl apply -f k8s/secrets.yaml
                     kubectl apply -f k8s/mysql-statefulset.yaml
-                    kubectl wait --for=condition=ready pod -l app=mysql -n  --timeout=180s
+                    kubectl wait --for=condition=ready pod -l app=mysql -n ${NAMESPACE} --timeout=180s
                 """
             }
         }
@@ -41,12 +41,12 @@
             steps {
                 script {
                     sh """
-                        sed -i 's|/:.*|/:|g' k8s/app-deployment.yaml
-                        kubectl delete deployment nammastocks-app -n  || true
+                        sed -i 's|${DOCKER_REGISTRY}/${IMAGE_NAME}:.*|${DOCKER_REGISTRY}/${IMAGE_NAME}:${params.BUILD_NUMBER}|g' k8s/app-deployment.yaml
+                        kubectl delete deployment nammastocks-app -n ${NAMESPACE} || true
                         kubectl apply -f k8s/app-deployment.yaml
-                        kubectl wait --for=condition=ready pod -l app=nammastocks -n  --timeout=180s
-                        kubectl get pods -n 
-                        kubectl get svc -n 
+                        kubectl wait --for=condition=ready pod -l app=nammastocks -n ${NAMESPACE} --timeout=180s
+                        kubectl get pods -n ${NAMESPACE}
+                        kubectl get svc -n ${NAMESPACE}
                     """
                 }
             }
@@ -58,9 +58,9 @@
                     echo "========================================="
                     echo "✅ NAMMASTOCKS DEPLOYMENT SUCCESSFUL!"
                     echo "========================================="
-                    echo "Application URL: http://:30007"
-                    echo "Via Nginx: http://"
-                    echo "Health Check: http:///health"
+                    echo "Application URL: http://${WORKER_IP}:30007"
+                    echo "Via Nginx: http://${WORKER_IP}"
+                    echo "Health Check: http://${WORKER_IP}/health"
                     echo "========================================="
                 }
             }
