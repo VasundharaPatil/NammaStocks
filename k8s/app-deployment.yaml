@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: nammastocks
-          image: yourdockerhub/nammastocks:latest
+          image: vasupa32/nammastocks:latest
           ports:
             - containerPort: 8080
           env:

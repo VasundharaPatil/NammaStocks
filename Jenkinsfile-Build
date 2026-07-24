@@ -7,7 +7,7 @@
     }
     
     environment {
-        DOCKER_REGISTRY = 'yourdockerhub'  // CHANGE THIS to your Docker Hub username
+        DOCKER_REGISTRY = 'vasupa32'  // CHANGE THIS to your Docker Hub username
         IMAGE_NAME = 'nammastocks'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         WORKER_IP = '172.31.39.240'
