@@ -14,6 +14,7 @@
     
     parameters {
         string(name: 'BUILD_NUMBER', defaultValue: 'latest', description: 'Build number to deploy')
+        choice(name: 'DEPLOYMENT_TYPE', choices: ['full', 'rolling'], description: 'Deployment type')
     }
     
     stages {
@@ -26,13 +27,46 @@
             }
         }
         
-        stage('Deploy Secrets and Database') {
+        stage('Remove Old Application') {
             steps {
                 sh """
+                    echo "Removing old application deployment..."
+                    kubectl delete deployment nammastocks-app -n ${NAMESPACE} || true
+                    kubectl delete service nammastocks-service -n ${NAMESPACE} || true
+                    echo "✅ Old application removed"
+                """
+            }
+        }
+        
+        stage('Remove Old Database') {
+            steps {
+                sh """
+                    echo "Removing old database..."
+                    kubectl delete statefulset mysql-statefulset -n ${NAMESPACE} || true
+                    kubectl delete service mysql-service -n ${NAMESPACE} || true
+                    kubectl delete secret mysql-secret -n ${NAMESPACE} || true
+                    kubectl delete secret app-secrets -n ${NAMESPACE} || true
+                    kubectl delete pvc -l app=mysql -n ${NAMESPACE} || true
+                    echo "✅ Old database removed"
+                """
+            }
+        }
+        
+        stage('Deploy Database') {
+            steps {
+                sh """
+                    echo "Creating namespace..."
                     kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                    
+                    echo "Deploying database secrets..."
                     kubectl apply -f k8s/secrets.yaml
+                    
+                    echo "Deploying MySQL StatefulSet..."
                     kubectl apply -f k8s/mysql-statefulset.yaml
+                    
+                    echo "Waiting for database to be ready..."
                     kubectl wait --for=condition=ready pod -l app=mysql -n ${NAMESPACE} --timeout=180s
+                    echo "✅ Database deployed successfully!"
                 """
             }
         }
@@ -41,12 +75,16 @@
             steps {
                 script {
                     sh """
+                        echo "Updating image tag in deployment..."
                         sed -i 's|${DOCKER_REGISTRY}/${IMAGE_NAME}:.*|${DOCKER_REGISTRY}/${IMAGE_NAME}:${params.BUILD_NUMBER}|g' k8s/app-deployment.yaml
-                        kubectl delete deployment nammastocks-app -n ${NAMESPACE} || true
+                        
+                        echo "Deploying application..."
                         kubectl apply -f k8s/app-deployment.yaml
+                        
+                        echo "Waiting for application to be ready..."
                         kubectl wait --for=condition=ready pod -l app=nammastocks -n ${NAMESPACE} --timeout=180s
-                        kubectl get pods -n ${NAMESPACE}
-                        kubectl get svc -n ${NAMESPACE}
+                        
+                        echo "✅ Application deployed successfully!"
                     """
                 }
             }
@@ -55,15 +93,33 @@
         stage('Verify Deployment') {
             steps {
                 script {
-                    echo "========================================="
-                    echo "✅ NAMMASTOCKS DEPLOYMENT SUCCESSFUL!"
-                    echo "========================================="
-                    echo "Application URL: http://${WORKER_IP}:30007"
-                    echo "Via Nginx: http://${WORKER_IP}"
-                    echo "Health Check: http://${WORKER_IP}/health"
-                    echo "========================================="
+                    sh """
+                        echo "========================================="
+                        echo "✅ NAMMASTOCKS DEPLOYMENT SUCCESSFUL!"
+                        echo "========================================="
+                        echo ""
+                        echo "Application URL: http://${WORKER_IP}:30007"
+                        echo "Via Nginx: http://${WORKER_IP}"
+                        echo "Health Check: http://${WORKER_IP}/health"
+                        echo ""
+                        echo "=== Kubernetes Resources ==="
+                        kubectl get pods -n ${NAMESPACE}
+                        kubectl get svc -n ${NAMESPACE}
+                        kubectl get deployments -n ${NAMESPACE}
+                        kubectl get statefulsets -n ${NAMESPACE}
+                        echo "========================================="
+                    """
                 }
             }
+        }
+    }
+    
+    post {
+        success {
+            echo "✅ Deployment completed successfully!"
+        }
+        failure {
+            echo "❌ Deployment failed!"
         }
     }
 }
