@@ -1,13 +1,13 @@
 ﻿pipeline {
     agent any
-
+    
     tools {
         maven 'Maven-3.8'
         jdk 'JDK-11'
     }
     
     environment {
-        DOCKER_REGISTRY = 'vasupa32'  // CHANGE THIS to your Docker Hub username
+        DOCKER_REGISTRY = 'vasupa32'
         IMAGE_NAME = 'nammastocks'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         WORKER_IP = '172.31.39.240'
@@ -19,7 +19,7 @@
             steps {
                 git branch: 'main', url: env.REPO_URL
                 script {
-                    currentBuild.displayName = "NammaStocks Build #"
+                    currentBuild.displayName = "NammaStocks Build #${BUILD_NUMBER}"
                 }
             }
         }
@@ -35,9 +35,9 @@
             steps {
                 script {
                     sh """
-                        scp target/*.jar ubuntu@:/tmp/nammastocks.jar
-                        scp Dockerfile ubuntu@:/tmp/Dockerfile
-                        ssh ubuntu@ "cd /tmp && docker build -t /: -f Dockerfile ."
+                        scp target/*.jar ubuntu@${WORKER_IP}:/tmp/nammastocks.jar
+                        scp Dockerfile ubuntu@${WORKER_IP}:/tmp/Dockerfile
+                        ssh ubuntu@${WORKER_IP} "cd /tmp && docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -f Dockerfile ."
                     """
                 }
             }
@@ -50,10 +50,10 @@
                                                       usernameVariable: 'DOCKER_USER', 
                                                       passwordVariable: 'DOCKER_PASS')]) {
                         sh """
-                            ssh ubuntu@ "docker login -u  -p "
-                            ssh ubuntu@ "docker push /:"
-                            ssh ubuntu@ "docker tag /: /:latest"
-                            ssh ubuntu@ "docker push /:latest"
+                            ssh ubuntu@${WORKER_IP} "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                            ssh ubuntu@${WORKER_IP} "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                            ssh ubuntu@${WORKER_IP} "docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
+                            ssh ubuntu@${WORKER_IP} "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
                         """
                     }
                 }
@@ -69,7 +69,7 @@
     
     post {
         success {
-            echo "✅ NammaStocks build successful! Image: /:"
+            echo "✅ NammaStocks build successful! Image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
         }
         failure {
             echo "❌ NammaStocks build failed!"
