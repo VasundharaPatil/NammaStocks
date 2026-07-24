@@ -1,0 +1,69 @@
+﻿pipeline {
+    agent {
+        label 'worker'
+    }
+    
+    environment {
+        KUBECONFIG = '/home/ubuntu/.kube/config'
+        NAMESPACE = 'production'
+        DOCKER_REGISTRY = 'yourdockerhub'  // CHANGE THIS
+        IMAGE_NAME = 'nammastocks'
+        WORKER_IP = '172.31.39.240'
+        REPO_URL = 'https://github.com/VasundharaPatil/NammaStocks.git'
+    }
+    
+    parameters {
+        string(name: 'BUILD_NUMBER', defaultValue: 'latest', description: 'Build number to deploy')
+    }
+    
+    stages {
+        stage('Checkout Manifests') {
+            steps {
+                git branch: 'main', url: env.REPO_URL
+                script {
+                    currentBuild.displayName = "NammaStocks Deploy Build #"
+                }
+            }
+        }
+        
+        stage('Deploy Secrets and Database') {
+            steps {
+                sh """
+                    kubectl create namespace  --dry-run=client -o yaml | kubectl apply -f -
+                    kubectl apply -f k8s/secrets.yaml
+                    kubectl apply -f k8s/mysql-statefulset.yaml
+                    kubectl wait --for=condition=ready pod -l app=mysql -n  --timeout=180s
+                """
+            }
+        }
+        
+        stage('Deploy Application') {
+            steps {
+                script {
+                    sh """
+                        sed -i 's|/:.*|/:|g' k8s/app-deployment.yaml
+                        kubectl delete deployment nammastocks-app -n  || true
+                        kubectl apply -f k8s/app-deployment.yaml
+                        kubectl wait --for=condition=ready pod -l app=nammastocks -n  --timeout=180s
+                        kubectl get pods -n 
+                        kubectl get svc -n 
+                    """
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo "========================================="
+                    echo "✅ NAMMASTOCKS DEPLOYMENT SUCCESSFUL!"
+                    echo "========================================="
+                    echo "Application URL: http://:30007"
+                    echo "Via Nginx: http://"
+                    echo "Health Check: http:///health"
+                    echo "========================================="
+                }
+            }
+        }
+    }
+}

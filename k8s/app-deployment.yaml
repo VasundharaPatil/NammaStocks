@@ -1,0 +1,89 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nammastocks-app
+  namespace: production
+  labels:
+    app: nammastocks
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nammastocks
+  template:
+    metadata:
+      labels:
+        app: nammastocks
+    spec:
+      containers:
+        - name: nammastocks
+          image: yourdockerhub/nammastocks:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql-service:3306/stock_market
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-root-password
+            - name: SPRING_MAIL_USERNAME
+              value: boragigouri9@gmail.com
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: mail-password
+            - name: ADMIN_EMAIL
+              value: admin@gmail.com
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: admin-password
+            - name: STOCK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: stock-api-key
+            - name: RAZOR_PAY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: razorpay-key
+            - name: RAZOR_PAY_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: razorpay-secret
+            - name: PLATFORMPERCENTAGE
+              value: "0.04"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nammastocks-service
+  namespace: production
+spec:
+  selector:
+    app: nammastocks
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30007
+  type: NodePort
